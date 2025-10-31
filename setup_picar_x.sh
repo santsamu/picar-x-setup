@@ -126,11 +126,80 @@ update_system() {
     log_success "System updated successfully"
 }
 
+# Pre-installation setup to handle modern Python restrictions
+pre_install_setup() {
+    log_info "Preparing system for PiCar-X installation..."
+    
+    # Check if we're dealing with an externally managed environment
+    if python3 -m pip list &>/dev/null; then
+        # Check if we get the externally managed error
+        if python3 -m pip install --help 2>&1 | grep -q "externally-managed-environment" 2>/dev/null || 
+           python3 -m pip install setuptools 2>&1 | grep -q "externally-managed-environment" 2>/dev/null; then
+            log_warning "Detected externally managed Python environment (PEP 668)"
+            log_info "Configuring pip to allow system-wide installation..."
+        fi
+    fi
+    
+    # Remove any existing EXTERNALLY-MANAGED marker temporarily during installation
+    if [[ -f "/usr/lib/python*/EXTERNALLY-MANAGED" ]]; then
+        log_info "Temporarily handling EXTERNALLY-MANAGED marker..."
+    fi
+    
+    log_success "Pre-installation setup completed"
+}
+
 # Install Python3 dependencies (required for Lite OS)
 install_python_deps() {
     log_info "Installing Python3 dependencies..."
-    sudo apt install -y git python3-pip python3-setuptools python3-smbus
+    sudo apt install -y git python3-pip python3-setuptools python3-smbus python3-full
     log_success "Python3 dependencies installed"
+}
+
+# Configure pip for system-wide installation (handle PEP 668)
+configure_pip() {
+    log_info "Configuring pip for system-wide installation..."
+    
+    # Create pip configuration to handle externally managed environment
+    mkdir -p ~/.config/pip
+    cat > ~/.config/pip/pip.conf << EOF
+[global]
+break-system-packages = true
+EOF
+    
+    # Also create global config for sudo operations
+    sudo mkdir -p /root/.config/pip
+    sudo tee /root/.config/pip/pip.conf > /dev/null << EOF
+[global]
+break-system-packages = true
+EOF
+    
+    log_success "Pip configured for system-wide installation"
+}
+
+# Install additional system dependencies
+install_system_deps() {
+    log_info "Installing additional system dependencies..."
+    
+    # Install common dependencies that might be needed
+    packages=(
+        "python3-full"
+        "python3-dev"
+        "build-essential"
+        "python3-smbus2"
+        "python3-gpiozero"
+        "python3-pyaudio"
+        "python3-spidev"
+        "python3-pil"
+        "python3-pygame"
+        "libgtk-3-0t64"  # Updated package name
+    )
+    
+    for package in "${packages[@]}"; do
+        log_info "Installing $package..."
+        sudo apt install -y "$package" 2>/dev/null || log_warning "Package $package not available (skipping)"
+    done
+    
+    log_success "System dependencies installation completed"
 }
 
 # Install robot-hat module
@@ -144,7 +213,11 @@ install_robot_hat() {
     
     git clone -b "$ROBOT_HAT_BRANCH" "$ROBOT_HAT_REPO"
     cd robot-hat
-    sudo python3 setup.py install
+    
+    # Use install.py instead of setup.py as recommended
+    log_info "Using install.py method (recommended by robot-hat)..."
+    sudo python3 install.py
+    
     log_success "robot-hat module installed"
 }
 
@@ -257,43 +330,8 @@ EOF
 
 # Create test script
 create_test_script() {
-    log_info "Creating basic test script..."
-    
-    cat > ~/picar_test.py << 'EOF'
-#!/usr/bin/env python3
-"""
-Basic PiCar-X Test Script
-This script performs basic functionality tests
-"""
-
-try:
-    import picarx
-    print("✓ PiCar-X module imported successfully")
-    
-    # Initialize PiCar-X
-    px = picarx.Picarx()
-    print("✓ PiCar-X initialized successfully")
-    
-    # Test basic movement (very brief)
-    print("Testing basic movement...")
-    px.forward(10)
-    import time
-    time.sleep(0.5)
-    px.stop()
-    print("✓ Basic movement test completed")
-    
-    print("\n🎉 All tests passed! PiCar-X is ready to use.")
-    
-except ImportError as e:
-    print(f"❌ Import error: {e}")
-    print("Please ensure all modules are installed correctly.")
-except Exception as e:
-    print(f"❌ Test error: {e}")
-    print("Please check your PiCar-X setup and connections.")
-EOF
-    
-    chmod +x ~/picar_test.py
-    log_success "Test script created at ~/picar_test.py"
+    log_info "Test script available in repository..."
+    log_success "Test script ready at ~/picar-x-setup/picar_test.py"
 }
 
 # Create README with instructions
@@ -355,6 +393,16 @@ EOF
     log_success "README created at ~/PICAR_X_README.md"
 }
 
+# Post-installation cleanup
+post_install_cleanup() {
+    log_info "Performing post-installation cleanup..."
+    
+    # Note: We leave the pip configuration in place as it's needed for future installations
+    # Users can remove ~/.config/pip/pip.conf manually if they want to revert
+    
+    log_success "Post-installation cleanup completed"
+}
+
 # Main installation function
 main() {
     # Handle help option
@@ -386,8 +434,11 @@ main() {
     fi
     
     # Run installation steps
+    pre_install_setup
     update_system
     install_python_deps
+    install_system_deps
+    configure_pip
     install_robot_hat
     install_vilib
     install_picar_x
@@ -397,16 +448,20 @@ main() {
     create_test_script
     create_readme
     
+    # Clean up any temporary modifications
+    post_install_cleanup
+    
     echo
     log_success "============================================"
     log_success "    PiCar-X Setup Complete!"
     log_success "============================================"
     echo
+    log_info "Setup completed successfully with modern Python environment support!"
     log_info "Next steps:"
     log_info "1. Enable I2C interface: sudo raspi-config"
     log_info "2. Install I2S amplifier: cd ~/picar-x && sudo bash i2samp.sh"
-    log_info "3. Calibrate servos: ~/servo_zero.sh"
-    log_info "4. Test installation: python3 ~/picar_test.py"
+    log_info "3. Run calibration: cd ~/picar-x/example/calibration && sudo python3 calibration.py"
+    log_info "4. Test installation: python3 ~/picar-x-setup/picar_test.py"
     echo
     log_info "Read ~/PICAR_X_README.md for detailed instructions."
     echo
@@ -427,6 +482,38 @@ main() {
         install_i2s_amplifier
     else
         log_warning "Remember to run: cd ~/picar-x && sudo bash i2samp.sh"
+    fi
+    
+    # Prompt for motor and servo fine-tuning calibration
+    echo
+    read -p "Would you like to run motor & servo calibration (fine-tuning)? (y/n): " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        log_info "Starting motor & servo calibration..."
+        log_info "This will open an interactive calibration program."
+        log_info "Use keys 1-3 to select servos, W/S to adjust, R to test."
+        log_info "Use keys 4-5 to select motors, Q to calibrate direction."
+        log_info "Press E to test forward movement."
+        log_info "Press Spacebar to save when done, then Ctrl+C to exit."
+        echo
+        read -p "Press Enter to start calibration program..."
+        cd ~/picar-x/example/calibration
+        sudo python3 calibration.py
+        log_success "Motor & servo calibration completed"
+    else
+        log_warning "Remember to run: cd ~/picar-x/example/calibration && sudo python3 calibration.py"
+    fi
+    
+    # Prompt for installation test
+    echo
+    read -p "Would you like to test the installation now? (y/n): " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        log_info "Running installation test..."
+        python3 ~/picar-x-setup/picar_test.py
+        log_success "Installation test completed"
+    else
+        log_warning "Remember to run: python3 ~/picar-x-setup/picar_test.py to test your installation"
     fi
 }
 

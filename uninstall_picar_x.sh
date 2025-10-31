@@ -58,7 +58,7 @@ check_installation() {
     done
     
     found_scripts=()
-    scripts=("$HOME/servo_zero.sh" "$HOME/picar_test.py" "$HOME/PICAR_X_README.md")
+    scripts=("$HOME/servo_zero.sh" "$HOME/PICAR_X_README.md")
     for script in "${scripts[@]}"; do
         if [[ -f "$script" ]]; then
             found_scripts+=("$script")
@@ -149,7 +149,7 @@ remove_source_directories() {
 remove_helper_scripts() {
     log_info "Removing helper scripts..."
     
-    scripts=("$HOME/servo_zero.sh" "$HOME/picar_test.py" "$HOME/PICAR_X_README.md")
+    scripts=("$HOME/servo_zero.sh" "$HOME/PICAR_X_README.md")
     for script in "${scripts[@]}"; do
         if [[ -f "$script" ]]; then
             log_info "Removing $script..."

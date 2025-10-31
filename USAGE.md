@@ -17,7 +17,7 @@ This project provides three main scripts for PiCar-X setup and management:
 - Disk space and permissions
 
 ### 🚀 `setup_picar_x.sh` 
-**Purpose**: Complete automated installation of PiCar-X
+**Purpose**: Complete automated installation of PiCar-X with modern Python environment support
 ```bash
 ./setup_picar_x.sh                 # Interactive mode (custom fork default)
 ./setup_picar_x.sh --custom-fork   # Use custom fork directly
@@ -25,11 +25,13 @@ This project provides three main scripts for PiCar-X setup and management:
 ./setup_picar_x.sh --help          # Show usage information
 ```
 **What it installs**:
-- Updates system packages
-- Installs Python dependencies
-- Downloads and installs robot-hat, vilib, and picar-x modules
+- Updates system packages and handles PEP 668 externally managed environments
+- Installs Python dependencies and system packages
+- Downloads and installs robot-hat (using install.py), vilib, and picar-x modules
 - Allows choice between custom fork (santsamu/picar-x) and official repository
-- Sets up I2S audio components
+- Sets up I2S audio components (optional)
+- Runs motor & servo calibration (optional)
+- Tests installation (optional)
 - Creates helper scripts and documentation
 
 ### 🗑️ `uninstall_picar_x.sh`
@@ -55,11 +57,18 @@ This project provides three main scripts for PiCar-X setup and management:
    ./setup_picar_x.sh
    ```
 
-3. **Follow post-installation steps**:
+3. **Follow the interactive prompts**:
+   - Choose repository (custom fork is default)
+   - Confirm installation
+   - Optionally install I2S audio components
+   - Optionally run motor & servo calibration
+   - Optionally test the installation
+
+4. **Manual post-installation steps** (if skipped during setup):
    - Enable I2C interface: `sudo raspi-config`
    - Install I2S audio: `cd ~/picar-x && sudo bash i2samp.sh`
-   - Calibrate servos: `~/servo_zero.sh`
-   - Test installation: `python3 ~/picar_test.py`
+   - Run calibration: `cd ~/picar-x/example/calibration && sudo python3 calibration.py`
+   - Test installation: `python3 ~/picar-x-setup/picar_test.py`
 
 ## Post-Installation Files
 
@@ -68,9 +77,9 @@ After successful installation, you'll find:
 - `~/robot-hat/` - Robot HAT library source
 - `~/vilib/` - Computer vision library source  
 - `~/picar-x/` - PiCar-X library and examples
-- `~/servo_zero.sh` - Servo calibration script
-- `~/picar_test.py` - Basic functionality test
+- `~/servo_zero.sh` - Servo calibration script (if created)
 - `~/PICAR_X_README.md` - Detailed usage guide
+- `~/picar-x-setup/picar_test.py` - Basic functionality test (in repository)
 
 ## Troubleshooting
 
@@ -79,9 +88,24 @@ After successful installation, you'll find:
 chmod +x *.sh
 ```
 
+### PEP 668 Externally Managed Environment
+The script automatically handles this, but if you see errors:
+```bash
+# Check pip configuration
+cat ~/.config/pip/pip.conf
+# Should contain: break-system-packages = true
+```
+
 ### Network Issues During Setup
 - Check internet connection
 - Try running setup again (script handles existing installations)
+
+### Robot-hat Installation Issues
+If robot-hat fails during setup:
+```bash
+cd ~/robot-hat
+sudo python3 install.py  # Use install.py, not setup.py
+```
 
 ### Module Import Errors After Installation
 ```bash

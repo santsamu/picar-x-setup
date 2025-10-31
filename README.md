@@ -18,29 +18,34 @@ Or use command-line options:
 
 ## What This Script Does
 
-The setup script automates the complete PiCar-X installation process based on the official SunFounder documentation:
+The setup script automates the complete PiCar-X installation process based on the official SunFounder documentation, with modern Python environment support:
 
 ### 1. System Updates
 - Updates package lists and upgrades system packages
-- Installs Python3 dependencies (git, pip, setuptools, smbus)
+- Installs Python3 dependencies (git, pip, setuptools, smbus, python3-full)
 
-### 2. Module Installation
-- **robot-hat** (v2.0): Core hardware abstraction layer
+### 2. Modern Python Environment Support
+- **PEP 668 Compliance**: Configures pip to handle externally managed environments
+- **System Dependencies**: Installs system packages to reduce pip dependency issues
+- **Updated Package Names**: Uses current package names (e.g., libgtk-3-0t64)
+
+### 3. Module Installation
+- **robot-hat** (v2.0): Core hardware abstraction layer (uses install.py method)
 - **vilib** (picamera2 branch): Computer vision library
 - **picar-x** (custom fork): Main PiCar-X control library from https://github.com/santsamu/picar-x.git
 
-### 3. Audio Setup
+### 4. Audio Setup
 - Installs I2S amplifier components for sound functionality
 - Configures audio drivers for the PiCar-X speaker
 
-### 4. Helper Scripts
+### 5. Helper Scripts
 - Creates servo zeroing script (`~/servo_zero.sh`)
-- Creates basic test script (`~/picar_test.py`)
+- Creates basic test script (available in repository)
 - Generates comprehensive README with usage instructions
 
 ## Manual Steps Required
 
-Some steps require manual intervention:
+The setup script now includes optional prompts for most steps, but some may require manual intervention:
 
 ### Enable I2C Interface
 ```bash
@@ -48,17 +53,30 @@ sudo raspi-config
 # Navigate to: Interfacing Options > I2C > Yes > Finish
 ```
 
-### Servo Calibration
-Before assembly, calibrate each servo:
+### Optional Manual Steps (if skipped during setup)
+
+#### I2S Audio Setup
 ```bash
-~/servo_zero.sh
+cd ~/picar-x
+sudo bash i2samp.sh
+```
+
+#### Motor & Servo Calibration
+```bash
+cd ~/picar-x/example/calibration
+sudo python3 calibration.py
+```
+
+#### Basic Servo Zeroing (if needed)
+```bash
+~/servo_zero.sh  # If the script was created
 ```
 
 ## Testing Your Installation
 
 After setup, test your PiCar-X:
 ```bash
-python3 ~/picar_test.py
+python3 ~/picar-x-setup/picar_test.py
 ```
 
 ## File Structure After Setup
@@ -68,12 +86,36 @@ python3 ~/picar_test.py
 ├── robot-hat/              # Robot HAT library source
 ├── vilib/                  # Vision library source
 ├── picar-x/               # PiCar-X library and examples
-├── servo_zero.sh          # Servo calibration script
-├── picar_test.py          # Basic functionality test
+├── servo_zero.sh          # Servo calibration script (if created)
 └── PICAR_X_README.md      # Detailed usage instructions
+
+picar-x-setup/
+└── picar_test.py          # Basic functionality test
 ```
 
 ## Troubleshooting
+
+### PEP 668 Externally Managed Environment
+If you see errors about "externally-managed-environment":
+```bash
+# The script automatically configures pip, but you can verify:
+cat ~/.config/pip/pip.conf
+# Should contain: break-system-packages = true
+```
+
+### Package Installation Errors
+For system package conflicts:
+```bash
+sudo apt update
+sudo apt install python3-full python3-dev build-essential
+```
+
+### Robot-hat Installation Issues
+If robot-hat fails to install:
+```bash
+cd ~/robot-hat
+sudo python3 install.py  # Use install.py, not setup.py
+```
 
 ### No Sound After Reboot
 Run the I2S script again:
@@ -110,7 +152,7 @@ This setup follows the official SunFounder guide:
 - [Quick Guide on Python](https://docs.sunfounder.com/projects/picar-x/en/latest/python/python_start/quick_guide_on_python.html)
 - [Install All Modules](https://docs.sunfounder.com/projects/picar-x/en/latest/python/python_start/install_all_modules.html)
 - [Enable I2C Interface](https://docs.sunfounder.com/projects/picar-x/en/latest/python/python_start/enable_i2c.html)
-- [Servo Adjust](https://docs.sunfounder.com/projects/picar-x/en/latest/python/python_start/py_servo_adjust.html)
+- [Motor & Servo Calibration](https://docs.sunfounder.com/projects/picar-x/en/latest/python/python_calibrate.html#calibrate-motors-servo)
 
 ## Requirements
 
