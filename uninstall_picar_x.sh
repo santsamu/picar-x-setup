@@ -35,59 +35,134 @@ print_header() {
     echo
 }
 
+# Check what's currently installed
+check_installation() {
+    log_info "Checking current PiCar-X installation..."
+    
+    found_packages=()
+    packages=("picarx" "robot-hat" "vilib")
+    for package in "${packages[@]}"; do
+        if pip3 show "$package" &>/dev/null; then
+            found_packages+=("$package")
+            log_info "Found installed package: $package"
+        fi
+    done
+    
+    found_dirs=()
+    directories=("$HOME/robot-hat" "$HOME/vilib" "$HOME/picar-x")
+    for dir in "${directories[@]}"; do
+        if [[ -d "$dir" ]]; then
+            found_dirs+=("$dir")
+            log_info "Found directory: $dir"
+        fi
+    done
+    
+    found_scripts=()
+    scripts=("$HOME/servo_zero.sh" "$HOME/picar_test.py" "$HOME/PICAR_X_README.md")
+    for script in "${scripts[@]}"; do
+        if [[ -f "$script" ]]; then
+            found_scripts+=("$script")
+            log_info "Found script: $script"
+        fi
+    done
+    
+    if [[ ${#found_packages[@]} -eq 0 ]] && [[ ${#found_dirs[@]} -eq 0 ]] && [[ ${#found_scripts[@]} -eq 0 ]]; then
+        log_warning "No PiCar-X installation found."
+        return 1
+    fi
+    
+    log_success "Found PiCar-X installation components."
+    return 0
+}
+
 remove_python_packages() {
     log_info "Removing Python packages..."
     
     # Remove pip packages if they exist
     packages=("picarx" "robot-hat" "vilib")
     for package in "${packages[@]}"; do
-        if pip3 list | grep -q "$package"; then
+        # Check if package is installed without broken pipe issues
+        if pip3 show "$package" &>/dev/null; then
             log_info "Removing $package..."
-            sudo pip3 uninstall -y "$package" 2>/dev/null || true
+            # Try regular uninstall first, then with sudo if needed
+            if ! pip3 uninstall -y "$package" &>/dev/null; then
+                log_warning "Standard uninstall failed, trying with sudo..."
+                sudo pip3 uninstall -y "$package" &>/dev/null || true
+            fi
+        else
+            log_info "Package $package not found (skipping)"
         fi
     done
     
-    log_success "Python packages removed"
+    # Also remove any manually installed packages via setup.py
+    log_info "Cleaning up any setup.py installed packages..."
+    for package in "${packages[@]}"; do
+        # Remove from site-packages if it exists
+        python_dirs=$(python3 -c "import site; print('\n'.join(site.getsitepackages()))" 2>/dev/null || echo "/usr/local/lib/python3.*/site-packages")
+        for pydir in $python_dirs; do
+            if [[ -d "$pydir" ]]; then
+                sudo find "$pydir" -name "*${package}*" -type d -exec rm -rf {} + 2>/dev/null || true
+                sudo find "$pydir" -name "*${package}*" -type f -exec rm -f {} + 2>/dev/null || true
+            fi
+        done
+    done
+    
+    log_success "Python packages check completed"
 }
 
 remove_source_directories() {
     log_info "Removing source directories..."
     
-    directories=("~/robot-hat" "~/vilib" "~/picar-x")
+    directories=("$HOME/robot-hat" "$HOME/vilib" "$HOME/picar-x")
     for dir in "${directories[@]}"; do
         if [[ -d "$dir" ]]; then
             log_info "Removing $dir..."
-            rm -rf "$dir"
+            # First try regular removal, then use sudo if needed
+            if ! rm -rf "$dir" 2>/dev/null; then
+                log_warning "Permission denied, using sudo to remove $dir..."
+                sudo rm -rf "$dir" 2>/dev/null || true
+            fi
+        else
+            log_info "Directory $dir not found (skipping)"
         fi
     done
     
-    log_success "Source directories removed"
+    log_success "Source directories check completed"
 }
 
 remove_helper_scripts() {
     log_info "Removing helper scripts..."
     
-    scripts=("~/servo_zero.sh" "~/picar_test.py" "~/PICAR_X_README.md")
+    scripts=("$HOME/servo_zero.sh" "$HOME/picar_test.py" "$HOME/PICAR_X_README.md")
     for script in "${scripts[@]}"; do
         if [[ -f "$script" ]]; then
             log_info "Removing $script..."
             rm -f "$script"
+        else
+            log_info "Script $script not found (skipping)"
         fi
     done
     
-    log_success "Helper scripts removed"
+    log_success "Helper scripts check completed"
 }
 
 cleanup_packages() {
     log_info "Cleaning up package cache..."
-    sudo apt autoremove -y
-    sudo apt autoclean
+    sudo apt autoremove -y &>/dev/null || true
+    sudo apt autoclean &>/dev/null || true
     log_success "Package cache cleaned"
 }
 
 main() {
     print_header
     
+    # Check if there's anything to uninstall
+    if ! check_installation; then
+        log_info "Nothing to uninstall. Exiting."
+        exit 0
+    fi
+    
+    echo
     log_warning "This script will remove all PiCar-X related files and packages."
     log_warning "This action cannot be undone."
     echo
