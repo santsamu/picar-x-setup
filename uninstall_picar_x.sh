@@ -80,7 +80,9 @@ remove_python_packages() {
     
     # Remove pip packages if they exist
     packages=("picarx" "robot-hat" "vilib")
-    for package in "${packages[@]}"; do
+    package_variations=("picarx" "robot_hat" "robot-hat" "vilib")
+    
+    for package in "${package_variations[@]}"; do
         # Check if package is installed without broken pipe issues
         if pip3 show "$package" &>/dev/null; then
             log_info "Removing $package..."
@@ -96,13 +98,27 @@ remove_python_packages() {
     
     # Also remove any manually installed packages via setup.py
     log_info "Cleaning up any setup.py installed packages..."
-    for package in "${packages[@]}"; do
+    cleanup_packages=("picarx" "robot_hat" "vilib")
+    for package in "${cleanup_packages[@]}"; do
         # Remove from site-packages if it exists
-        python_dirs=$(python3 -c "import site; print('\n'.join(site.getsitepackages()))" 2>/dev/null || echo "/usr/local/lib/python3.*/site-packages")
+        python_dirs=$(python3 -c "import site; print(' '.join(site.getsitepackages()))" 2>/dev/null || echo "/usr/local/lib/python3.*/dist-packages")
         for pydir in $python_dirs; do
             if [[ -d "$pydir" ]]; then
-                sudo find "$pydir" -name "*${package}*" -type d -exec rm -rf {} + 2>/dev/null || true
-                sudo find "$pydir" -name "*${package}*" -type f -exec rm -f {} + 2>/dev/null || true
+                # Remove package directories
+                if [[ -d "$pydir/$package" ]]; then
+                    log_info "Removing $pydir/$package..."
+                    sudo rm -rf "$pydir/$package" 2>/dev/null || true
+                fi
+                # Remove .egg-info directories
+                if ls "$pydir"/*${package}*.egg-info &>/dev/null; then
+                    log_info "Removing ${package} egg-info from $pydir..."
+                    sudo rm -rf "$pydir"/*${package}*.egg-info 2>/dev/null || true
+                fi
+                # Remove .dist-info directories (newer pip format)
+                if ls "$pydir"/*${package}*.dist-info &>/dev/null; then
+                    log_info "Removing ${package} dist-info from $pydir..."
+                    sudo rm -rf "$pydir"/*${package}*.dist-info 2>/dev/null || true
+                fi
             fi
         done
     done
