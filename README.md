@@ -89,6 +89,15 @@ python3 -c "import picarx; print('PiCar-X module OK')"
 python3 -c "import robot_hat; print('Robot HAT module OK')"
 ```
 
+### GPIO Issues
+Check GPIO devices and permissions:
+```bash
+ls -la /dev/gpio*
+groups | grep gpio
+```
+
+Modern Raspberry Pi OS uses `/dev/gpiomem0`, `/dev/gpiomem1`, etc. instead of the legacy `/dev/gpiomem`.
+
 ### I2C Issues
 Check I2C devices:
 ```bash

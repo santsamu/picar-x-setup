@@ -35,6 +35,17 @@ check_item() {
     fi
 }
 
+check_gpio_access() {
+    # Check if GPIO devices exist and user has access
+    # Note: Modern Raspberry Pi OS uses /dev/gpiomem0, /dev/gpiomem1, etc.
+    # instead of the legacy /dev/gpiomem device
+    if ls /dev/gpiomem* /dev/gpiochip* &>/dev/null && groups | grep -q gpio; then
+        return 0
+    else
+        return 1
+    fi
+}
+
 check_item_with_output() {
     local description="$1"
     local test_command="$2"
@@ -75,9 +86,9 @@ echo
 
 # Hardware checks
 echo -e "${BLUE}Hardware Configuration:${NC}"
-check_item "GPIO interface accessible" "ls /dev/gpiomem"
-check_item "I2C interface available" "ls /dev/i2c-*"
-check_item "SPI interface available" "ls /dev/spidev*"
+check_item "GPIO interface accessible" "check_gpio_access"
+check_item "I2C interface available" "ls /dev/i2c-* 2>/dev/null | head -1"
+check_item "SPI interface available" "ls /dev/spidev* 2>/dev/null | head -1"
 
 echo
 
