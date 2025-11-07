@@ -31,8 +31,8 @@ The setup script automates the complete PiCar-X installation process based on th
 
 ### 3. Module Installation
 - **robot-hat** (v2.0): Core hardware abstraction layer (uses install.py method)
-- **vilib** (picamera2 branch): Computer vision library
-- **picar-x** (custom fork): Main PiCar-X control library from https://github.com/santsamu/picar-x.git
+- **vilib** (main branch): Computer vision library from custom fork https://github.com/santsamu/vilib.git
+- **picar-x** (main branch): Main PiCar-X control library from custom fork https://github.com/santsamu/picar-x.git
 
 ### 4. Audio Setup
 - Installs I2S amplifier components for sound functionality
@@ -83,9 +83,9 @@ python3 ~/picar-x-setup/picar_test.py
 
 ```
 ~/
-├── robot-hat/              # Robot HAT library source
-├── vilib/                  # Vision library source
-├── picar-x/               # PiCar-X library and examples
+├── robot-hat/              # Robot HAT library source (SunFounder official)
+├── vilib/                  # Vision library source (santsamu fork, main branch)
+├── picar-x/               # PiCar-X library and examples (santsamu fork, main branch)
 ├── servo_zero.sh          # Servo calibration script (if created)
 └── PICAR_X_README.md      # Detailed usage instructions
 
