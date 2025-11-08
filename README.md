@@ -30,7 +30,7 @@ The setup script automates the complete PiCar-X installation process based on th
 - **Updated Package Names**: Uses current package names (e.g., libgtk-3-0t64)
 
 ### 3. Module Installation
-- **robot-hat** (v2.0): Core hardware abstraction layer (uses install.py method)
+- **robot-hat** (v2.0): Core hardware abstraction layer from custom fork https://github.com/santsamu/robot-hat.git (uses install.py method)
 - **vilib** (main branch): Computer vision library from custom fork https://github.com/santsamu/vilib.git
 - **picar-x** (main branch): Main PiCar-X control library from custom fork https://github.com/santsamu/picar-x.git
 
@@ -83,7 +83,7 @@ python3 ~/picar-x-setup/picar_test.py
 
 ```
 ~/
-├── robot-hat/              # Robot HAT library source (SunFounder official)
+├── robot-hat/              # Robot HAT library source (santsamu fork, v2.0 branch)
 ├── vilib/                  # Vision library source (santsamu fork, main branch)
 ├── picar-x/               # PiCar-X library and examples (santsamu fork, main branch)
 ├── servo_zero.sh          # Servo calibration script (if created)

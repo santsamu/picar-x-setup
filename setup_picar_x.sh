@@ -13,7 +13,7 @@
 #   ./setup_picar_x.sh -o           # Use official repository (short form)
 
 # Configuration - Repository URLs
-ROBOT_HAT_REPO="https://github.com/sunfounder/robot-hat.git"
+ROBOT_HAT_REPO="https://github.com/santsamu/robot-hat.git"
 ROBOT_HAT_BRANCH="v2.0"
 VILIB_REPO="https://github.com/santsamu/vilib.git"
 VILIB_BRANCH="main"
@@ -344,9 +344,9 @@ create_readme() {
 Your PiCar-X has been set up according to the official SunFounder guide.
 
 ## What was installed:
-- robot-hat module (v2.0) - Official SunFounder repository
+- robot-hat module (v2.0) - Custom fork from santsamu/robot-hat
 - vilib module (main branch) - Custom fork from santsamu/vilib
-- picar-x module - Custom fork from santsamu/picar-x
+- picar-x module (main branch) - Custom fork from santsamu/picar-x
 - I2S amplifier components
 - Python3 dependencies
 
